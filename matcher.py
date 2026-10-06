@@ -1,74 +1,246 @@
 from ai_client import ask_ai
+from database import (
+    get_resumes,
+    get_resume_by_id,
+    get_jobs,
+    get_job_by_id
+)
 
 
 def match_resume_job():
     """
     简历 × 岗位智能匹配分析
-    根据候选人简历和岗位招聘信息，
-    分析匹配优势、能力差距、简历优化方向和面试准备重点。
+
+    支持：
+    1. 从数据库选择已有简历
+    2. 手动粘贴新简历
+    3. 从数据库选择已有岗位
+    4. 手动粘贴新岗位
+    5. 调用 Xing4.0-29B 进行智能匹配分析
     """
 
     print("\n" + "=" * 45)
     print("          简历 × 岗位智能匹配")
     print("=" * 45)
 
+    # ==================================================
+    # 第一部分：选择简历来源
+    # ==================================================
+
+    print("\n请选择简历来源：")
+    print("1. 使用数据库中已保存的简历")
+    print("2. 手动粘贴新简历")
+
+    resume_choice = input("请输入选项（1/2）：").strip()
+
     # =========================
-    # 输入简历
+    # 方式1：读取数据库简历
     # =========================
 
-    print("\n请粘贴你的简历内容。")
-    print("输入完成后，请单独输入 END，然后按回车。")
-    print("-" * 45)
+    if resume_choice == "1":
 
-    resume_lines = []
+        resumes = get_resumes()
 
-    while True:
-        line = input()
+        if not resumes:
+            print("\n数据库中暂时没有保存的简历。")
+            return
 
-        if line.strip().upper() == "END":
-            break
+        print("\n已保存的简历：")
+        print("-" * 45)
 
-        resume_lines.append(line)
+        for item in resumes:
+            print(
+                f"ID：{item[0]}  "
+                f"名称：{item[1]}"
+            )
 
-    resume = "\n".join(resume_lines).strip()
+        print("-" * 45)
 
-    if not resume:
-        print("\n没有检测到简历内容。")
+        resume_id = input(
+            "请输入要使用的简历 ID："
+        ).strip()
+
+        if not resume_id.isdigit():
+            print("\n简历 ID 必须是数字。")
+            return
+
+        selected_resume = get_resume_by_id(
+            int(resume_id)
+        )
+
+        if not selected_resume:
+            print("\n没有找到对应的简历。")
+            return
+
+        resume = selected_resume[2]
+
+        print(
+            f"\n✓ 已选择简历："
+            f"{selected_resume[1]}"
+        )
+
+    # =========================
+    # 方式2：手动输入简历
+    # =========================
+
+    elif resume_choice == "2":
+
+        print("\n请粘贴你的简历内容。")
+        print(
+            "输入完成后，请单独输入 END，"
+            "然后按回车。"
+        )
+        print("-" * 45)
+
+        resume_lines = []
+
+        while True:
+            line = input()
+
+            if line.strip().upper() == "END":
+                break
+
+            resume_lines.append(line)
+
+        resume = "\n".join(
+            resume_lines
+        ).strip()
+
+        if not resume:
+            print("\n没有检测到简历内容。")
+            return
+
+        print("\n✓ 已读取手动输入的简历。")
+
+    else:
+        print("\n输入有误，请输入 1 或 2。")
         return
 
+    # ==================================================
+    # 第二部分：选择岗位来源
+    # ==================================================
+
+    print("\n" + "=" * 45)
+    print("              选择目标岗位")
+    print("=" * 45)
+
+    print("\n请选择岗位来源：")
+    print("1. 使用数据库中已保存的岗位")
+    print("2. 手动粘贴新岗位")
+
+    job_choice = input(
+        "请输入选项（1/2）："
+    ).strip()
+
     # =========================
-    # 输入岗位信息
+    # 方式1：读取数据库岗位
     # =========================
 
-    print("\n请粘贴目标岗位招聘信息。")
-    print("输入完成后，请单独输入 END，然后按回车。")
-    print("-" * 45)
+    if job_choice == "1":
 
-    job_lines = []
+        jobs = get_jobs()
 
-    while True:
-        line = input()
+        if not jobs:
+            print("\n数据库中暂时没有保存的岗位。")
+            return
 
-        if line.strip().upper() == "END":
-            break
+        print("\n已保存的岗位：")
+        print("-" * 45)
 
-        job_lines.append(line)
+        for item in jobs:
 
-    job_text = "\n".join(job_lines).strip()
+            job_id = item[0]
+            company = item[1]
+            position = item[2]
 
-    if not job_text:
-        print("\n没有检测到岗位招聘信息。")
+            if not company:
+                company = "未填写公司"
+
+            print(
+                f"ID：{job_id}  "
+                f"公司：{company}  "
+                f"岗位：{position}"
+            )
+
+        print("-" * 45)
+
+        job_id = input(
+            "请输入要使用的岗位 ID："
+        ).strip()
+
+        if not job_id.isdigit():
+            print("\n岗位 ID 必须是数字。")
+            return
+
+        selected_job = get_job_by_id(
+            int(job_id)
+        )
+
+        if not selected_job:
+            print("\n没有找到对应的岗位。")
+            return
+
+        company = selected_job[1]
+        position = selected_job[2]
+        job_text = selected_job[3]
+
+        if not company:
+            company = "未填写公司"
+
+        print(
+            f"\n✓ 已选择岗位："
+            f"{company} - {position}"
+        )
+
+    # =========================
+    # 方式2：手动输入岗位
+    # =========================
+
+    elif job_choice == "2":
+
+        print("\n请粘贴目标岗位招聘信息。")
+        print(
+            "输入完成后，请单独输入 END，"
+            "然后按回车。"
+        )
+        print("-" * 45)
+
+        job_lines = []
+
+        while True:
+            line = input()
+
+            if line.strip().upper() == "END":
+                break
+
+            job_lines.append(line)
+
+        job_text = "\n".join(
+            job_lines
+        ).strip()
+
+        if not job_text:
+            print("\n没有检测到岗位招聘信息。")
+            return
+
+        print("\n✓ 已读取手动输入的岗位信息。")
+
+    else:
+        print("\n输入有误，请输入 1 或 2。")
         return
 
-    # =========================
-    # AI 匹配分析
-    # =========================
+    # ==================================================
+    # 第三部分：AI 匹配分析
+    # ==================================================
 
     print("\n" + "=" * 45)
     print("            AI 智能匹配分析")
     print("=" * 45)
 
-    print("\n正在调用 Xing4.0-29B 进行匹配分析，请稍候...\n")
+    print(
+        "\n正在调用 Xing4.0-29B "
+        "进行匹配分析，请稍候...\n"
+    )
 
     prompt = f"""
 你是一名专业的招聘顾问、简历评估专家和面试辅导专家。
@@ -193,7 +365,8 @@ def match_resume_job():
 
 用一句话说明：
 
-“候选人为什么适合/不适合这个岗位，以及最大的优势和短板是什么。”
+“候选人为什么适合/不适合这个岗位，
+以及最大的优势和短板是什么。”
 
 ==============================
 候选人简历

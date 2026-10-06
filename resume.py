@@ -1,4 +1,5 @@
 from ai_client import ask_ai
+from database import save_resume
 
 
 def analyze_resume():
@@ -20,11 +21,31 @@ def analyze_resume():
 
         resume_text.append(line)
 
-    resume = "\n".join(resume_text)
+    # =========================
+    # 整理简历内容
+    # =========================
 
-    if not resume.strip():
+    resume = "\n".join(resume_text).strip()
+
+    if not resume:
         print("\n没有检测到简历内容。")
         return
+
+    # =========================
+    # 保存简历到数据库
+    # =========================
+
+    save_choice = input("\n是否保存这份简历？(y/n)：").strip().lower()
+
+    if save_choice == "y":
+        resume_name = input("请输入简历名称：").strip()
+
+        if not resume_name:
+            resume_name = "我的简历"
+
+        save_resume(resume_name, resume)
+
+        print(f"\n✓ 简历“{resume_name}”已保存到数据库。")
 
     # =========================
     # 第一部分：Python 基础分析
